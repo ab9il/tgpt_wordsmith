@@ -7,7 +7,7 @@
 # (at your option) any later version. There is NO warranty; not even for
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-# This script reads topical information and several subtoical items to
+# This script reads topical information and several subtopical items to
 # create a prompt and generate html suitable for insertion in live web
 # pages. It uses golang based tgpt.
 
@@ -23,14 +23,14 @@
 #  files!
 
 SITE_CODE="defgh"
-PROV_NAME="phind"
+PROV_NAME="pollinations"
 PROMPT_SOURCES=(misc/"$SITE_CODE"-misc/group*)
 OUTPUTPATH="finished-pages/$SITE_CODE"
 TOPICS_FILE="topics"                          # broader subject to discuss
 ITEMS_FILE="items"                            # more specific topics
-TOP_DATA="$(<misc/$SITE_CODE-misc/top)"       # generic top of page
-BOTTOM_DATA="$(<misc/$SITE_CODE-misc/bottom)" # generic bottom of page
-TGPT_PATH="/usr/local/src/gotgpt/tgpt-linux-amd64"
+TOP_DATA="misc/$SITE_CODE-misc/top"       # generic top of page
+BOTTOM_DATA="misc/$SITE_CODE-misc/bottom" # generic bottom of page
+TGPT_PATH="tgpt"
 
 ###############################################################################
 # DRAGONS BELOW!
@@ -50,20 +50,34 @@ for SOURCE in "${PROMPT_SOURCES[@]}"; do
     S=1 # sequence number
     for K in "${TOPICS[@]}"; do
         TIME="$(date +"%Y-%m-%d_%H-%M-%S")" #timestamp
-        echo -e "\n$TOP_DATA" >"${OUTPUTPATH}/${TIME}-${S}.html"
+        SUMQ=""
+        TARGETFILE="${OUTPUTPATH}/${TIME}-${S}.html"
+        \cat "${TOP_DATA}" >"${TARGETFILE}"
         for Q in "${ITEMS[@]}"; do
             echo "Working on $K and $Q"
-            PROMPT="You will create HTML body text for an existing page; do not
+            # running list of items
+            SUMQ="${SUMQ} ${Q}"
+            # define prompt using heredoc
+            PROMPT=$(cat << ZZZZZZZ
+            You will create HTML body text for an existing page; do not
             create any <head> or <h1> elements. Find recent information about $K with
-            emphasis and details on $Q, and create HTML formatted text. Follow a narrative
-            (storytelling) style. Use <h3> headers, bold, and italic text for emphasis,
-            where appropriate. Avoid emdashes and bullet
-            points."
-
+            emphasis and details on $Q, and create HTML formatted text. Build text
+            in a narrative (storytelling) style. Use <h3> headers, bold <b>, and
+            italic <i> elements for emphasis, when appropriate. Do not use emdashes or
+            bullet points.
+ZZZZZZZ
+)
+            # write content to the output file
             CONTENT="$($TGPT --provider "${PROV_NAME}" "${PROMPT}")"
-            echo -e "\n$CONTENT\n" >>"${OUTPUTPATH}/${TIME}-${S}.html"
+            echo -e "\n$CONTENT\n" >>"${TARGETFILE}"
         done
-        echo -e "\n$BOTTOM_DATA" >>"${OUTPUTPATH}/${TIME}-${S}.html"
+        \cat "$BOTTOM_DATA" >>"${TARGETFILE}"
         ((S++))
+        # put in a title and description
+        sed -i "s|title=\"\"|title=\"${K}\"|g; \
+            s|description=\"\"|description=\"${K} with consideration of several aspects, like ${SUMQ}.\"|g; \
+            s|alt=\"\"|alt=\"${SUMQ}\"|g; \
+            /^\r.*$/d" \
+            "${TARGETFILE}"
     done
 done

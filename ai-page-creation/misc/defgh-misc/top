@@ -10,4 +10,8 @@ $showindex=True;
 $pagetitle=$title;
 $content=<<<OUT
 
-
+<div class="image">
+<img src="https://ifecal.com/images/petri-dish3.jpg"
+alt="">
+</div>
+<div class="clear"></div>
