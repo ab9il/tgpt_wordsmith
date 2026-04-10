@@ -26,8 +26,8 @@ SITE_CODE="hijkl"
 PROV_NAME="pollinations"
 PROMPT_SOURCES=(misc/"$SITE_CODE"-misc/group*)
 OUTPUTPATH="finished-pages/$SITE_CODE"
-TOPICS_FILE="topics"                          # broader subject to discuss
-ITEMS_FILE="items"                            # more specific topics
+TOPICS_FILE="topics"                      # broader subject to discuss
+ITEMS_FILE="items"                        # more specific topics
 TOP_DATA="misc/$SITE_CODE-misc/top"       # generic top of page
 BOTTOM_DATA="misc/$SITE_CODE-misc/bottom" # generic bottom of page
 TGPT_PATH="tgpt"
@@ -61,26 +61,27 @@ for SOURCE in "${PROMPT_SOURCES[@]}"; do
             # running list of items
             SUMQ="${SUMQ} ${Q}"
             # define prompt using heredoc
-            PROMPT=$(cat << ZZZZZZZ
+            PROMPT=$(
+                cat <<ZZZZZZZ
             Create HTML body text for an existing page; do not create any <head> or <h1>
             elements. Find recent information about $K with emphasis and details on $Q.
             Create HTML content in a narrative (storytelling) style. Use <h3> headers,
             bold <b>, and italic <i> elements for emphasis, as appropriate. Do not use
             emdashes or bullet points.
 ZZZZZZZ
-)
+            )
             # query for content and write it to the output file
             RETRY_COUNT=0
             while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
                 # Submit the prompt to tgpt
                 if CONTENT=$($TGPT --provider "${PROV_NAME}" "${PROMPT}" 2>/dev/null); then
                     # Check if the output contains error indicators (500/502)
-                    if [[ $CONTENT =~ "error:.*status.*500" ]] || \
-                        [[ $CONTENT =~ "error:.*status.*502" ]] || \
-                        [[ $CONTENT =~ "500" ]] || \
+                    if [[ $CONTENT =~ "error:.*status.*500" ]] ||
+                        [[ $CONTENT =~ "error:.*status.*502" ]] ||
+                        [[ $CONTENT =~ "500" ]] ||
                         [[ $CONTENT =~ "502" ]]; then
-                        echo -e "\nError detected! Stand by $RETRY_DELAY for a retry...\n"
                         ((RETRY_COUNT++))
+                        echo -e "\nError detected! Stand by $RETRY_DELAY for a retry ($RETRY_COUNT)\n"
                         sleep $RETRY_DELAY
                         continue
                     fi
@@ -89,7 +90,7 @@ ZZZZZZZ
                 else
                     # Command failed (non-zero exit code)
                     ((RETRY_COUNT++))
-                    echo "Command failed. Retrying... ($RETRY_COUNT)"
+                    echo "Command failed! Stand by $RETRY_DELAY for a retry ($RETRY_COUNT)"
                     sleep $RETRY_DELAY
                     continue
                 fi
