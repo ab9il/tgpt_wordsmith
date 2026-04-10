@@ -31,6 +31,8 @@ ITEMS_FILE="items"                            # more specific topics
 TOP_DATA="misc/$SITE_CODE-misc/top"       # generic top of page
 BOTTOM_DATA="misc/$SITE_CODE-misc/bottom" # generic bottom of page
 TGPT_PATH="tgpt"
+MAX_RETRIES=10
+RETRY_DELAY=20
 
 ###############################################################################
 # DRAGONS BELOW!
@@ -49,6 +51,7 @@ for SOURCE in "${PROMPT_SOURCES[@]}"; do
     IFS=$'\n' read -rd '' -a ITEMS <<<"$(\cat "$SOURCE"/"$ITEMS_FILE")"
     S=1 # sequence number
     for K in "${TOPICS[@]}"; do
+        CONTENT=""
         TIME="$(date +"%Y-%m-%d_%H-%M-%S")" #timestamp
         SUMQ=""
         TARGETFILE="${OUTPUTPATH}/${TIME}-${S}.html"
@@ -59,17 +62,46 @@ for SOURCE in "${PROMPT_SOURCES[@]}"; do
             SUMQ="${SUMQ} ${Q}"
             # define prompt using heredoc
             PROMPT=$(cat << ZZZZZZZ
-            You will create HTML body text for an existing page; do not
-            create any <head> or <h1> elements. Find recent information about $K with
-            emphasis and details on $Q, and create HTML formatted text. Build text
-            in a narrative (storytelling) style. Use <h3> headers, bold <b>, and
-            italic <i> elements for emphasis, when appropriate. Do not use emdashes or
-            bullet points.
+            Create HTML body text for an existing page; do not create any <head> or <h1>
+            elements. Find recent information about $K with emphasis and details on $Q.
+            Create HTML content in a narrative (storytelling) style. Use <h3> headers,
+            bold <b>, and italic <i> elements for emphasis, as appropriate. Do not use
+            emdashes or bullet points.
 ZZZZZZZ
 )
-            # write content to the output file
-            CONTENT="$($TGPT --provider "${PROV_NAME}" "${PROMPT}")"
-            echo -e "\n$CONTENT\n" >>"${TARGETFILE}"
+            # query for content and write it to the output file
+            RETRY_COUNT=0
+            while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+                # Submit the prompt to tgpt
+                if CONTENT=$($TGPT --provider "${PROV_NAME}" "${PROMPT}" 2>/dev/null); then
+                    # Check if the output contains error indicators (500/502)
+                    if [[ $CONTENT =~ "error:.*status.*500" ]] || \
+                        [[ $CONTENT =~ "error:.*status.*502" ]] || \
+                        [[ $CONTENT =~ "500" ]] || \
+                        [[ $CONTENT =~ "502" ]]; then
+                        echo -e "\nError detected! Stand by $RETRY_DELAY for a retry...\n"
+                        ((RETRY_COUNT++))
+                        sleep $RETRY_DELAY
+                        continue
+                    fi
+                    # If no error, break the loop
+                    break
+                else
+                    # Command failed (non-zero exit code)
+                    ((RETRY_COUNT++))
+                    echo "Command failed. Retrying... ($RETRY_COUNT)"
+                    sleep $RETRY_DELAY
+                    continue
+                fi
+            done
+
+            if [[ $RETRY_COUNT -eq $MAX_RETRIES ]]; then
+                echo "Max retries reached."
+            else
+                echo "Success!"
+                echo -e "\n$CONTENT\n" >>"${TARGETFILE}"
+            fi
+
         done
         \cat "$BOTTOM_DATA" >>"${TARGETFILE}"
         ((S++))

@@ -19,4 +19,6 @@ These are a work in progress...
 
 - Know or have access to accurate knowledge about the topics. You need to create prompts focused on pertinent information in order to create good content. The AI models do not have judgement and will say silly or incorrect things, which you must find and correct in order to maintain your quality.
 - The examples build multiple chapters or sets of web pages with raw data for prompts in book/chapter and group/misc directories.
+  - For creating web pages, consider "topics" as pages, "items" as sectios within a page.
+  - For creating books, content is broken down into subdirectories, with the most basic units set up in markdown.
 - Be sure to edit the output and remove any junk text from the AI session.
