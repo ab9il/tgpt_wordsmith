@@ -1,0 +1,12 @@
+<?php $title="";
+$description="";
+$showads=True;
+$showindex=True;
+$pagetitle=$title;
+$content=<<<OUT
+
+<div class="image">
+<img src="https://www.ab9il.net/images/sdr-waterfall-066.jpg"
+alt="">
+</div>
+<div class="clear"></div>

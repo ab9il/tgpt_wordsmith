@@ -8,21 +8,20 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # This script reads topical information and several subtopical items to
-# create a prompt and generate html suitable for insertion in live web
+# create prompt and generate html suitable for insertion in live web
 # pages. It uses golang based tgpt.
 
-# This script is intended for creation of deep, thousand word pages, each
-# on a specific topic but covering the "items"" in relation to the various
-# main topics.
+# This script is intended for creation of deep, multi thousand word pages, with
+# multiple sections on related topics, explored with multiple "items."
 #
 #  For example, a list of "pizza restaurants" for topics and a list of
-#  pizza aspects for coverage on each page: pepperoni, supreme, corn-and-peppers,
+#  pizza aspectsi: pepperoni, supreme, corn-and-peppers,
 #  and so forth.
 #
 #  To round out a website, you should prepare dozens of pairs of topic and items
 #  files!
 
-SITE_CODE="defgh"
+SITE_CODE="deepdive"
 PROV_NAME="pollinations"
 PROMPT_SOURCES=(misc/"$SITE_CODE"-misc/group*)
 OUTPUTPATH="finished-pages/$SITE_CODE"
@@ -45,21 +44,26 @@ export TGPT="tgpt"
 # create an output directory if it does not exist
 [ -d "$OUTPUTPATH" ] || mkdir $OUTPUTPATH
 
+# set initial values
+S=1 # sequence number
+CONTENT=""
+SUMK=()
+SUMQ=()
+TIME="$(date +"%Y-%m-%d_%H-%M-%S")" #timestamp
+TARGETFILE="${OUTPUTPATH}/${TIME}-${S}.html"
+\cat "${TOP_DATA}" >"${TARGETFILE}"
+
 for SOURCE in "${PROMPT_SOURCES[@]}"; do
     # read topics and items
     IFS=$'\n' read -rd '' -a TOPICS <<<"$(\cat "$SOURCE"/"$TOPICS_FILE")"
     IFS=$'\n' read -rd '' -a ITEMS <<<"$(\cat "$SOURCE"/"$ITEMS_FILE")"
-    S=1 # sequence number
     for K in "${TOPICS[@]}"; do
-        CONTENT=""
-        TIME="$(date +"%Y-%m-%d_%H-%M-%S")" #timestamp
-        SUMQ=""
-        TARGETFILE="${OUTPUTPATH}/${TIME}-${S}.html"
-        \cat "${TOP_DATA}" >"${TARGETFILE}"
         for Q in "${ITEMS[@]}"; do
             echo "Working on $K and $Q"
+            # running list of topics
+            SUMK=("${SUMK}" "${K}")
             # running list of items
-            SUMQ="${SUMQ} ${Q}"
+            SUMQ=("${SUMQ}" "${Q}")
             # define prompt using heredoc
             PROMPT=$(
                 cat <<ZZZZZZZ
@@ -104,15 +108,18 @@ ZZZZZZZ
             fi
 
         done
-        \cat "$BOTTOM_DATA" >>"${TARGETFILE}"
-        ((S++))
-        # put in a title and description
-        # remove junk and dds
-        sed -i "s|title=\"\"|title=\"${K}\"|g; \
-            s|description=\"\"|description=\"${K} with consideration of several aspects, like ${SUMQ}.\"|g; \
-            s|alt=\"\"|alt=\"${SUMQ}\"|g; \
-            /^\r.*$/d; \
-            /---/,/everyone\./d" \
-            "${TARGETFILE}"
     done
 done
+
+# close out the very long html file
+\cat "$BOTTOM_DATA" >>"${TARGETFILE}"
+((S++))
+# put in a title and description
+# remove junk and dds
+sed -i "s|title=\"\"|title=\"${K}\"|g; \
+    s|description=\"\"|description=\"${K} with consideration of several aspects, like ${SUMQ}.\"|g; \
+    s|alt=\"\"|alt=\"${SUMQ}\"|g; \
+    /^\r.*$/d; \
+    /---/,/everyone\./d" \
+    "${TARGETFILE}"
+

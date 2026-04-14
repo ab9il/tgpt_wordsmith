@@ -22,17 +22,17 @@
 #  To round out a website, you should prepare dozens of pairs of topic and items
 #  files!
 
-SITE_CODE="defgh"
-PROV_NAME="pollinations"
-PROMPT_SOURCES=(misc/"$SITE_CODE"-misc/group*)
-OUTPUTPATH="finished-pages/$SITE_CODE"
-TOPICS_FILE="topics"                      # broader subject to discuss
-ITEMS_FILE="items"                        # more specific topics
-TOP_DATA="misc/$SITE_CODE-misc/top"       # generic top of page
-BOTTOM_DATA="misc/$SITE_CODE-misc/bottom" # generic bottom of page
-TGPT_PATH="tgpt"
-MAX_RETRIES=10
-RETRY_DELAY=20
+SITE_CODE="abcde"
+export PROMPT_SOURCES=(misc/"$SITE_CODE"-misc/group*)
+export PROV_NAME="pollinations"
+export OUTPUTPATH="finished-pages/$SITE_CODE"
+export TOPICS_FILE="topics"                    # broader subject to discuss
+export ITEMS_FILE="items"                        # more specific topics
+export TOP_DATA="misc/$SITE_CODE-misc/top"       # generic top of page
+export BOTTOM_DATA="misc/$SITE_CODE-misc/bottom" # generic bottom of page
+export TGPT_PATH="tgpt"
+export MAX_RETRIES=10
+export RETRY_DELAY=20
 
 ###############################################################################
 # DRAGONS BELOW!
@@ -45,17 +45,21 @@ export TGPT="tgpt"
 # create an output directory if it does not exist
 [ -d "$OUTPUTPATH" ] || mkdir $OUTPUTPATH
 
-for SOURCE in "${PROMPT_SOURCES[@]}"; do
-    # read topics and items
-    IFS=$'\n' read -rd '' -a TOPICS <<<"$(\cat "$SOURCE"/"$TOPICS_FILE")"
-    IFS=$'\n' read -rd '' -a ITEMS <<<"$(\cat "$SOURCE"/"$ITEMS_FILE")"
+
+make_page_set() {
     S=1 # sequence number
+    # read topics and items
+    IFS=$'\n' read -rd '' -a TOPICS <<<"$(\cat "$1"/"$TOPICS_FILE")"
+    IFS=$'\n' read -rd '' -a ITEMS <<<"$(\cat "$1"/"$ITEMS_FILE")"
+    # loop through topics
     for K in "${TOPICS[@]}"; do
+        DELAY="$((RANDOM % 9 + 1))"
         CONTENT=""
         TIME="$(date +"%Y-%m-%d_%H-%M-%S")" #timestamp
         SUMQ=""
         TARGETFILE="${OUTPUTPATH}/${TIME}-${S}.html"
         \cat "${TOP_DATA}" >"${TARGETFILE}"
+        # loop through items for tgpt queries
         for Q in "${ITEMS[@]}"; do
             echo "Working on $K and $Q"
             # running list of items
@@ -73,6 +77,7 @@ ZZZZZZZ
             # query for content and write it to the output file
             RETRY_COUNT=0
             while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+                sleep $DELAY
                 # Submit the prompt to tgpt
                 if CONTENT=$($TGPT --provider "${PROV_NAME}" "${PROMPT}" 2>/dev/null); then
                     # Check if the output contains error indicators (500/502)
@@ -115,4 +120,10 @@ ZZZZZZZ
             /---/,/everyone\./d" \
             "${TARGETFILE}"
     done
+}
+export -f make_page_set
+
+for SOURCE in "${PROMPT_SOURCES[@]}"; do
+    echo "Processing source:  $SOURCE"
+    parallel -j 4 make_page_set ::: "$SOURCE"
 done

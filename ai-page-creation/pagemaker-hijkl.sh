@@ -107,10 +107,12 @@ ZZZZZZZ
         \cat "$BOTTOM_DATA" >>"${TARGETFILE}"
         ((S++))
         # put in a title and description
+        # remove junk and dds
         sed -i "s|title=\"\"|title=\"${K}\"|g; \
             s|description=\"\"|description=\"${K} with consideration of several aspects, like ${SUMQ}.\"|g; \
             s|alt=\"\"|alt=\"${SUMQ}\"|g; \
-            /^\r.*$/d" \
+            /^\r.*$/d; \
+            /---/,/everyone\./d" \
             "${TARGETFILE}"
     done
 done
