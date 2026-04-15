@@ -47,8 +47,8 @@ export TGPT="tgpt"
 # set initial values
 S=1 # sequence number
 CONTENT=""
-SUMK=()
-SUMQ=()
+SUMK=""
+SUMQ=""
 TIME="$(date +"%Y-%m-%d_%H-%M-%S")" #timestamp
 TARGETFILE="${OUTPUTPATH}/${TIME}-${S}.html"
 \cat "${TOP_DATA}" >"${TARGETFILE}"
@@ -61,9 +61,9 @@ for SOURCE in "${PROMPT_SOURCES[@]}"; do
         for Q in "${ITEMS[@]}"; do
             echo "Working on $K and $Q"
             # running list of topics
-            SUMK=("${SUMK}" "${K}")
+            SUMK="${SUMK} ${K}"
             # running list of items
-            SUMQ=("${SUMQ}" "${Q}")
+            SUMQ="${SUMQ} ${Q}"
             # define prompt using heredoc
             PROMPT=$(
                 cat <<ZZZZZZZ
@@ -122,4 +122,3 @@ sed -i "s|title=\"\"|title=\"${K}\"|g; \
     /^\r.*$/d; \
     /---/,/everyone\./d" \
     "${TARGETFILE}"
-
