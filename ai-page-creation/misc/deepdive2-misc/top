@@ -1,9 +1,4 @@
-<?php
-
-//REQUIRE FUNCTIONS
-require_once 'functions.php';
-
-$title="";
+<?php $title="";
 $description="";
 $showads=True;
 $showindex=True;
@@ -11,7 +6,7 @@ $pagetitle=$title;
 $content=<<<OUT
 
 <div class="image">
-<img src="https://ifecal.com/images/petri-dish3.jpg"
+<img src="https://www.ab9il.net/images/sdr-waterfall-066.jpg"
 alt="">
 </div>
 <div class="clear"></div>

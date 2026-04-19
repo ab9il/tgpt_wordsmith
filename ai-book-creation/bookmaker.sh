@@ -7,12 +7,16 @@
 # (at your option) any later version. There is NO warranty; not even for
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-# This script reads topical information, creates a prompt and generates
-# html suitable for insertion in live web pages. It uses golang based
-# tgpt.
+# This script reads topical information, creates a prompt, and generates
+# text suitable for assembly into books. It uses golang based tgpt.
+#
+# Note: Each chapter directory should contain sequentially numbered text
+# files, each containing a markdown formatted outline snippet for one
+# prompt for the ai provider. Format as a header follwed by short statements,
+# questions, or list of topics. Keep each file concise and focused.
 
 export PROV_NAME="pollinations"
-export BOOKDATA=(book-*)
+export BOOKDATA=(book-*) # directories: book-01, book-02, etc
 TGPT_PATH="tgpt"
 export MAX_RETRIES=10
 export RETRY_DELAY=20
@@ -26,8 +30,9 @@ export RETRY_DELAY=20
 export TGPT="tgpt"
 
 make_chapter() {
-    # 1 - sequentially read notes within each chapter directory
-    # 2 - create content and APPEND to the chapter text
+    # 1 - book directories contain several chapter directories
+    # 2 - sequentially read markdown notes within each chapter directory
+    # 3 - create content and APPEND to the chapter text
     X=1
     for K in "$CHAPTER"/*; do
         DELAY="$((RANDOM % 9 + 1))"
@@ -38,13 +43,13 @@ make_chapter() {
         # define prompt using heredoc
         PROMPT=$(
             cat <<ZZZZZZZ
-        Create an essay in plain text according to the following criteria:
-        1) answer formatted in paragraphs, 2) avoid numbered or bullet pointed
-        lists, 3) focus on subject matter in the following markdown formatted
-        snippet: $NOTE
+        Consider and discuss topics according to the following rules:
+        1) format your answers in paragraphs; 2) avoid creating numbered or bullet
+        pointed lists, but use markdown headers, bold, and italic text; 3) Discuss
+        topics given in the following snippet of markdown text: $NOTE
 ZZZZZZZ
         )
-        # random delay befor querying AI service
+        # random delay before querying AI service
         sleep "$DELAY"
         # query for content and write it to the output file
         RETRY_COUNT=0
