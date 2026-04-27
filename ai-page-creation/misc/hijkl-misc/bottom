@@ -1,5 +1,5 @@
 
 
 OUT;
-pagemake($title,$description,$showads,$showindex,$pagetitle,$content);
+pagemake($title,$description,$showads,$showindex,$pagetitle,$content,$block);
 ?>
